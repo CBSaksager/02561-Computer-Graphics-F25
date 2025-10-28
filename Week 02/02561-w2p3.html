@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Week 2 P3</title>
+    <script type="text/javascript" src="../MV.js"></script>
+    <script type="text/javascript" src="02561-w2p3.js"></script>
+</head>
+
+<script id="wgsl" type="x-shader" src="02561-w2p3.wgsl"></script>
+Choose drawmoode:
+<select id="drawModeMenu">
+    <option value="0" selected>Points</option>
+    <option value="1">Triangles</option>
+</select>
+<br>
+
+Choose a paint color:
+<select id="colorMenu">
+    <option value="0">Light Blue</option>
+    <option value="1" selected>Black</option>
+    <option value="2">Red</option>
+    <option value="3">Yellow</option>
+    <option value="4">Green</option>
+    <option value="5">Blue</option>
+    <option value="6">Magenta</option>
+    <option value="7">Cyan</option>
+</select>
+<br>
+
+<body>
+    <canvas id="webgl" width="512" height="512">
+        Please use a browser that supports HTML5 canvas.
+    </canvas>
+</body>
+<br>
+<button id="clearButton">Clear Canvas</button>
+<select id="clearMenu">
+    <option value="0">Light Blue</option>
+    <option value="1">Black</option>
+    <option value="2">Red</option>
+    <option value="3">Yellow</option>
+    <option value="4">Green</option>
+    <option value="5">Blue</option>
+    <option value="6">Magenta</option>
+    <option value="7">Cyan</option>
+</select>
+</html>
