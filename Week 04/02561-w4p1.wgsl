@@ -1,5 +1,5 @@
 struct Uniforms {
-    mvp_matrix: array<mat4x4f, 3>,
+    mvp_matrix: array<mat4x4f, 1>,
 }
 
 @group(0) @binding(0)

@@ -1,7 +1,28 @@
 'use strict';
+
+function subdivideSphere(positions, indices) {
+  var triangles = indices.length / 3;
+  var newIndices = [];
+  for (let i = 0; i < triangles; i++) {
+    var i0 = indices[i * 3 + 0];
+    var i1 = indices[i * 3 + 1];
+    var i2 = indices[i * 3 + 2];
+    const c01 = positions.length;
+    const c12 = positions.length + 1;
+    const c20 = positions.length + 2;
+    positions.push(normalize(add(positions[i0], positions[i1])));
+    positions.push(normalize(add(positions[i1], positions[i2])));
+    positions.push(normalize(add(positions[i2], positions[i0])));
+    newIndices.push(i0, c01, c20, c20, c01, c12, c12, c01, i1, c20, c12, i2);
+  }
+  return newIndices;
+}
+
 window.onload = function () {
   main();
 };
+
+
 async function main() {
   const gpu = navigator.gpu;
   const adapter = await gpu.requestAdapter();
@@ -22,45 +43,41 @@ async function main() {
     code: wgslcode,
   });
 
+  const M_SQRT2 = Math.sqrt(2.0);
+  const M_SQRT6 = Math.sqrt(6.0);
   // prettier-ignore
-  const vertices = new Float32Array([
-    // Bottom face (z=0)
-    0, 0, 0,  // 0
-    1, 0, 0,  // 1
-    1, 1, 0,  // 2
-    0, 1, 0,  // 3
-    // Top face (z=1)
-    0, 0, 1,  // 4
-    1, 0, 1,  // 5
-    1, 1, 1,  // 6
-    0, 1, 1,  // 7
-  ]);
+  let positions = [
+    vec3(0.0, 0.0, 1.0),
+    vec3(0.0, 2.0 * M_SQRT2 / 3.0, -1.0 / 3.0),
+    vec3(-M_SQRT6 / 3.0, -M_SQRT2 / 3.0, -1.0 / 3.0),
+    vec3(M_SQRT6 / 3.0, -M_SQRT2 / 3.0, -1.0 / 3.0),
+  ];
 
   // prettier-ignore
-  // Wireframe indices
-  let wire_indices = new Uint32Array([
-    0, 1, 1, 2, 2, 3, 3, 0, // front
-    2, 3, 3, 7, 7, 6, 6, 2, // right
-    0, 3, 3, 7, 7, 4, 4, 0, // down
-    1, 2, 2, 6, 6, 5, 5, 1, // up
-    4, 5, 5, 6, 6, 7, 7, 4, // back
-    0, 1, 1, 5, 5, 4, 4, 0 // left
+  let indices = new Uint32Array([
+    0, 1, 2,
+    0, 3, 1,
+    1, 3, 2,
+    0, 2, 3
   ]);
 
-  const vertexBuffer = device.createBuffer({
-    size: vertices.byteLength,
+  const maxSubdivisionLevel = 8;
+  const minSubdivisionLevel = 0;
+  let subdivisions = 0;
+  let calculatedSubdivision = subdivisions;
+
+  const positionBuffer = device.createBuffer({
+    size: sizeof['vec3'] * 4 ** (maxSubdivisionLevel + 1),
     usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
   });
-  device.queue.writeBuffer(vertexBuffer, 0, vertices);
 
   const indexBuffer = device.createBuffer({
-    size: wire_indices.byteLength,
+    size: sizeof['vec3'] * 4 ** (maxSubdivisionLevel + 1),
     usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
   });
-  device.queue.writeBuffer(indexBuffer, 0, wire_indices);
 
-  const vertexBufferLayout = {
-    arrayStride: 3 * 4,
+  const positionBufferLayout = {
+    arrayStride: sizeof['vec3'],
     attributes: [
       {
         format: 'float32x3',
@@ -69,6 +86,8 @@ async function main() {
       },
     ],
   };
+
+  const backgroundColor = { r: 0.3921, g: 0.5843, b: 0.9294, a: 1.0 };
 
   const eye = vec3(0, 0, 7); // Camera position
   const at = vec3(0, 0, 0); // Look-at point
@@ -93,31 +112,31 @@ async function main() {
   const view = lookAt(eye, at, up);
 
   // Models
-  const centering = translate(-0.5, -0.5, -0.5);
-  const model_cube = mult(translate(0, 0, 0), mult(rotateY(30), centering)); // center
+  const centering = translate(0, 0, 0);
 
-  const models = [model_cube];
+  const models = [centering];
   const mvps = models.map((model) => mult(projection, mult(view, model)));
 
   // Uniform buffer
   const uniformBuffer = device.createBuffer({
-    size: sizeof['mat4'] * 3,
+    size: sizeof['mat4'] * mvps.length,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
+  device.queue.writeBuffer(uniformBuffer, 0, flatten(mvps[0]));
 
   const pipeline = device.createRenderPipeline({
     layout: 'auto',
     vertex: {
       module: wgsl,
       entryPoint: 'main_vs',
-      buffers: [vertexBufferLayout],
+      buffers: [positionBufferLayout],
     },
     fragment: {
       module: wgsl,
       entryPoint: 'main_fs',
       targets: [{ format: canvasFormat }],
     },
-    primitive: { topology: 'line-list' },
+    primitive: { topology: 'triangle-list' },
   });
 
   const bindGroup = device.createBindGroup({
@@ -129,27 +148,59 @@ async function main() {
       },
     ],
   });
-  device.queue.writeBuffer(uniformBuffer, 0, flatten(mvps[0]));
 
-  // Create a render pass in a command buffer and submit it
-  const encoder = device.createCommandEncoder();
-  const pass = encoder.beginRenderPass({
-    colorAttachments: [
-      {
-        view: context.getCurrentTexture().createView(),
-        loadOp: 'clear',
-        storeOp: 'store',
-        clearValue: { r: 0.3921, g: 0.5843, b: 0.9294, a: 1.0 },
-      },
-    ],
-  });
+  function render() {
+    device.queue.writeBuffer(positionBuffer, 0, flatten(positions));
+    device.queue.writeBuffer(indexBuffer, 0, indices);
+    // Create a render pass in a command buffer and submit it
+    const encoder = device.createCommandEncoder();
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: context.getCurrentTexture().createView(),
+          loadOp: 'clear',
+          storeOp: 'store',
+          clearValue: { r: backgroundColor.r, g: backgroundColor.g, b: backgroundColor.b, a: backgroundColor.a },
+        },
+      ],
+    });
 
-  pass.setBindGroup(0, bindGroup);
-  pass.setPipeline(pipeline);
-  pass.setVertexBuffer(0, vertexBuffer);
-  pass.setIndexBuffer(indexBuffer, 'uint32');
-  pass.drawIndexed(wire_indices.length, 3);
+    pass.setBindGroup(0, bindGroup);
+    pass.setPipeline(pipeline);
+    pass.setVertexBuffer(0, positionBuffer);
+    pass.setIndexBuffer(indexBuffer, 'uint32');
+    pass.drawIndexed(indices.length, 3);
 
-  pass.end();
-  device.queue.submit([encoder.finish()]);
+    pass.end();
+    device.queue.submit([encoder.finish()]);
+  }
+  render();
+
+  // -----------------------------
+  // Buttons
+  // -----------------------------
+  var subdivideButton = document.getElementById('increaseButton');
+  var decreaseButton = document.getElementById('decreaseButton');
+
+  // Increase subdivision
+  subdivideButton.onclick = () => {
+    console.log('Increase Subdivision');
+    if (subdivisions < maxSubdivisionLevel) {
+      subdivisions++;
+      if (subdivisions > calculatedSubdivision) {
+        indices = new Uint32Array(subdivideSphere(positions, indices));
+        calculatedSubdivision++;
+      }
+      requestAnimationFrame(render);
+    }
+  };
+
+  // Decrease subdivision (note: reversing the subdivision in-place isn't implemented here)
+  decreaseButton.onclick = () => {
+    console.log('Decrease Subdivision');
+    if (subdivisions > minSubdivisionLevel) {
+      subdivisions--;
+      // To actually reverse the mesh you'd need to recreate the base mesh or store previous levels.
+    }
+  };
 }
