@@ -160,7 +160,7 @@ async function main() {
   const orbitButton = document.getElementById('orbitButton');
   orbitButton.onclick = () => {
     orbitEnabled = !orbitEnabled;
-    orbitButton.textContent = orbitEnabled ? 'Orbit: OFF' : 'Orbit: ON';
+    orbitButton.textContent = orbitEnabled ? 'Orbit: ON' : 'Orbit: OFF';
   };
 
   // Models
