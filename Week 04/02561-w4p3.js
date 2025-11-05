@@ -101,10 +101,6 @@ async function main() {
 
   const backgroundColor = { r: 0.3921, g: 0.5843, b: 0.9294, a: 1.0 };
 
-  const eye = vec3(0, 0, 7); // Camera position
-  const at = vec3(0, 0, 0); // Look-at point
-  const up = vec3(0, 1, 0); // Up vector
-
   const fovy = 45;
   const aspect = canvas.width / canvas.height;
   const near = 0.1;
@@ -121,20 +117,20 @@ async function main() {
   // prettier-ignore
   let projection = perspective(fovy, aspect, near, far);
   projection = mult(mst, projection);
-  const view = lookAt(eye, at, up);
+
+  // Camera orbit
+  let angle = 0; // Orbit angle
+  const radius = 7; // Orbit radius
 
   // Models
   const centering = translate(0, 0, 0);
-
-  const models = [centering];
-  const mvps = models.map((model) => mult(projection, mult(view, model)));
+  const model = centering;
 
   // Uniform buffer
   const uniformBuffer = device.createBuffer({
-    size: sizeof['mat4'] * mvps.length,
+    size: sizeof['mat4'] * 1,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
-  device.queue.writeBuffer(uniformBuffer, 0, flatten(mvps[0]));
 
   const pipeline = device.createRenderPipeline({
     layout: 'auto',
@@ -178,6 +174,15 @@ async function main() {
   });
 
   function render() {
+    angle += 0.01; // Update orbit angle
+    const eye = vec3(radius * Math.sin(angle), 0, radius * Math.cos(angle)); // Camera position
+    const at = vec3(0, 0, 0); // Look-at point
+    const up = vec3(0, 1, 0); // Up vector
+
+    const view = lookAt(eye, at, up);
+    const mvp = mult(projection, mult(view, model));
+
+    device.queue.writeBuffer(uniformBuffer, 0, flatten(mvp));
     device.queue.writeBuffer(positionBuffer, 0, flatten(positions));
     device.queue.writeBuffer(indexBuffer, 0, indices);
     // Create a render pass in a command buffer and submit it
@@ -212,6 +217,8 @@ async function main() {
 
     pass.end();
     device.queue.submit([encoder.finish()]);
+
+    requestAnimationFrame(render);
   }
   render();
 
