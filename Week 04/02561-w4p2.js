@@ -148,7 +148,23 @@ async function main() {
       entryPoint: 'main_fs',
       targets: [{ format: canvasFormat }],
     },
-    primitive: { topology: 'triangle-list' },
+    primitive: {
+      topology: 'triangle-list',
+      cullMode: 'back',
+    },
+    depthStencil: {
+      depthWriteEnabled: true,
+      depthCompare: 'less',
+      format: 'depth24plus',
+    },
+  });
+
+  const msaaCount = 1;
+  const depthTexture = device.createTexture({
+    size: { width: canvas.width, height: canvas.height },
+    format: 'depth24plus',
+    sampleCount: msaaCount,
+    usage: GPUTextureUsage.RENDER_ATTACHMENT,
   });
 
   const bindGroup = device.createBindGroup({
@@ -180,6 +196,12 @@ async function main() {
           },
         },
       ],
+      depthStencilAttachment: {
+        view: depthTexture.createView(),
+        depthLoadOp: 'clear',
+        depthClearValue: 1.0,
+        depthStoreOp: 'store',
+      },
     });
 
     pass.setBindGroup(0, bindGroup);
