@@ -75,6 +75,8 @@ async function main() {
   const maxSubdivisionLevel = 8;
   const minSubdivisionLevel = 0;
   let subdivisions = 0;
+  const subdivisionText = document.getElementById('currentSubdivision');
+  subdivisionText.textContent = subdivisions;
 
   const positionBuffer = device.createBuffer({
     size: sizeof['vec3'] * 4 ** (maxSubdivisionLevel + 1),
@@ -202,6 +204,7 @@ async function main() {
     console.log('Increase Subdivision');
     if (subdivisions < maxSubdivisionLevel) {
       subdivisions++;
+      subdivisionText.textContent = subdivisions;
       indices = new Uint32Array(subdivideSphere(positions, indices));
     }
     requestAnimationFrame(render);
@@ -212,6 +215,7 @@ async function main() {
     console.log('Decrease Subdivision');
     if (subdivisions > minSubdivisionLevel) {
       subdivisions--;
+      subdivisionText.textContent = subdivisions;
       indices = new Uint32Array(coarseSphere(indices));
     }
     requestAnimationFrame(render);
