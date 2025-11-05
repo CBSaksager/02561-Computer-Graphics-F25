@@ -214,6 +214,9 @@ async function main() {
     ],
   });
 
+  device.queue.writeBuffer(positionBuffer, 0, flatten(positions));
+  device.queue.writeBuffer(indexBuffer, 0, indices);
+
   function render() {
     if (orbitEnabled) {
       angle += 0.01; // Update orbit angle
@@ -236,8 +239,6 @@ async function main() {
 
     device.queue.writeBuffer(uniformBuffer, 0, flatten(mvp));
     device.queue.writeBuffer(uniformBuffer, sizeof['mat4'], uniformData);
-    device.queue.writeBuffer(positionBuffer, 0, flatten(positions));
-    device.queue.writeBuffer(indexBuffer, 0, indices);
     // Create a render pass in a command buffer and submit it
     const encoder = device.createCommandEncoder();
     const pass = encoder.beginRenderPass({
@@ -288,6 +289,8 @@ async function main() {
       subdivisions++;
       subdivisionText.textContent = subdivisions;
       indices = new Uint32Array(subdivideSphere(positions, indices));
+      device.queue.writeBuffer(positionBuffer, 0, flatten(positions));
+      device.queue.writeBuffer(indexBuffer, 0, indices);
     }
     requestAnimationFrame(render);
   };
@@ -299,6 +302,8 @@ async function main() {
       subdivisions--;
       subdivisionText.textContent = subdivisions;
       indices = new Uint32Array(coarseSphere(indices));
+      device.queue.writeBuffer(positionBuffer, 0, flatten(positions));
+      device.queue.writeBuffer(indexBuffer, 0, indices);
     }
     requestAnimationFrame(render);
   };
