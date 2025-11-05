@@ -18,10 +18,21 @@ function subdivideSphere(positions, indices) {
   return newIndices;
 }
 
+function coarseSphere(indices) {
+  var triangles = indices.length / 12;
+  var newIndices = [];
+  for (let i = 0; i < triangles; i++) {
+    var i0 = indices[i * 12 + 0];
+    var i1 = indices[i * 12 + 8];
+    var i2 = indices[i * 12 + 11];
+    newIndices.push(i0, i1, i2);
+  }
+  return newIndices;
+}
+
 window.onload = function () {
   main();
 };
-
 
 async function main() {
   const gpu = navigator.gpu;
@@ -64,7 +75,6 @@ async function main() {
   const maxSubdivisionLevel = 8;
   const minSubdivisionLevel = 0;
   let subdivisions = 0;
-  let calculatedSubdivision = subdivisions;
 
   const positionBuffer = device.createBuffer({
     size: sizeof['vec3'] * 4 ** (maxSubdivisionLevel + 1),
@@ -160,7 +170,12 @@ async function main() {
           view: context.getCurrentTexture().createView(),
           loadOp: 'clear',
           storeOp: 'store',
-          clearValue: { r: backgroundColor.r, g: backgroundColor.g, b: backgroundColor.b, a: backgroundColor.a },
+          clearValue: {
+            r: backgroundColor.r,
+            g: backgroundColor.g,
+            b: backgroundColor.b,
+            a: backgroundColor.a,
+          },
         },
       ],
     });
@@ -187,12 +202,9 @@ async function main() {
     console.log('Increase Subdivision');
     if (subdivisions < maxSubdivisionLevel) {
       subdivisions++;
-      if (subdivisions > calculatedSubdivision) {
-        indices = new Uint32Array(subdivideSphere(positions, indices));
-        calculatedSubdivision++;
-      }
-      requestAnimationFrame(render);
+      indices = new Uint32Array(subdivideSphere(positions, indices));
     }
+    requestAnimationFrame(render);
   };
 
   // Decrease subdivision (note: reversing the subdivision in-place isn't implemented here)
@@ -200,7 +212,8 @@ async function main() {
     console.log('Decrease Subdivision');
     if (subdivisions > minSubdivisionLevel) {
       subdivisions--;
-      // To actually reverse the mesh you'd need to recreate the base mesh or store previous levels.
+      indices = new Uint32Array(coarseSphere(indices));
     }
+    requestAnimationFrame(render);
   };
 }
