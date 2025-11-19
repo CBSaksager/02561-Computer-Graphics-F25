@@ -46,6 +46,14 @@ function getInputs() {
   };
 }
 
+function renderOnChange(e) {
+  document.getElementById('TextEdgeMode').onchange = e;
+  document.getElementById('minFilter').onchange = e;
+  document.getElementById('magFilter').onchange = e;
+  document.getElementById('mipmapFilter').onchange = e;
+  document.getElementById('mipmapEnabled').onchange = e;
+}
+
 window.onload = function () {
   main();
 };
@@ -71,36 +79,8 @@ async function main() {
   });
 
   const img = new Image();
-  img.src = 'earthmap1k.jpg';
+  img.src = 'earth.jpg';
   await img.decode();
-
-  // Get slider elements
-  const L_e_slider = document.querySelector('#emittedRadiance input');
-  const L_a_slider = document.querySelector('#ambientRadiance input');
-  const k_d_slider = document.querySelector('#diffuseCoefficient input');
-  const k_s_slider = document.querySelector('#specularCoefficient input');
-  const shininess_slider = document.querySelector('#shininess input');
-
-  // Add input event listeners for immediate response
-  L_e_slider.addEventListener('input', (e) => {
-    L_e = parseFloat(e.target.value);
-  });
-
-  L_a_slider.addEventListener('input', (e) => {
-    L_a = parseFloat(e.target.value);
-  });
-
-  k_d_slider.addEventListener('input', (e) => {
-    k_d = parseFloat(e.target.value);
-  });
-
-  k_s_slider.addEventListener('input', (e) => {
-    k_s = parseFloat(e.target.value);
-  });
-
-  shininess_slider.addEventListener('input', (e) => {
-    shininess = parseFloat(e.target.value);
-  });
 
   const M_SQRT2 = Math.sqrt(2.0);
   const M_SQRT6 = Math.sqrt(6.0);
@@ -120,9 +100,14 @@ async function main() {
     0, 2, 3
   ]);
 
+  const initialSubdivisions = 6;
+  for (let i = 0; i < initialSubdivisions; ++i) {
+    indices = new Uint32Array(subdivideSphere(positions, indices));
+  }
+
   const maxSubdivisionLevel = 8;
   const minSubdivisionLevel = 0;
-  let subdivisions = 0;
+  let subdivisions = initialSubdivisions;
   const subdivisionText = document.getElementById('currentSubdivision');
   subdivisionText.textContent = subdivisions;
 
@@ -147,14 +132,7 @@ async function main() {
     ],
   };
 
-  const backgroundColor = { r: 0.3921, g: 0.5843, b: 0.9294, a: 1.0 };
-
-  // Lighting parameters
-  let L_e = 1.0;
-  let L_a = 0.1;
-  let k_d = 0.8;
-  let k_s = 1.0;
-  let shininess = 10.0;
+  const backgroundColor = { r: 0, g: 0, b: 0, a: 1.0 };
 
   const fovy = 45;
   const aspect = canvas.width / canvas.height;
@@ -175,7 +153,7 @@ async function main() {
 
   // Camera orbit
   let angle = 0; // Orbit angle
-  const radius = 7; // Orbit radius
+  const radius = 3; // Orbit radius
   let orbitEnabled = false; // Orbit control
   const orbitButton = document.getElementById('orbitButton');
   orbitButton.onclick = () => {
@@ -189,9 +167,43 @@ async function main() {
 
   // Uniform buffer
   const uniformBuffer = device.createBuffer({
-    size: sizeof['mat4'] + 4 * 8,
+    size: sizeof['mat4'],
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
+
+  let texture;
+  function updateTexture() {
+    const settings = getInputs();
+
+    texture = device.createTexture({
+      size: [img.width, img.height, 1],
+      format: 'rgba8unorm',
+      mipLevelCount: settings.mipmapEnabled
+        ? numMipLevels(img.width, img.height)
+        : 1,
+      usage:
+        GPUTextureUsage.COPY_DST |
+        GPUTextureUsage.TEXTURE_BINDING |
+        GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+    device.queue.copyExternalImageToTexture(
+      { source: img, flipY: settings.flipY },
+      { texture: texture },
+      { width: img.width, height: img.height }
+    );
+    if (settings.mipmapEnabled) {
+      generateMipmap(device, texture);
+    }
+
+    texture.sampler = device.createSampler({
+      addressModeU: settings.textureEdgeMode,
+      addressModeV: settings.textureEdgeMode,
+      minFilter: settings.minFilter,
+      magFilter: settings.magFilter,
+      mipmapFilter: settings.mipmapFilter,
+    });
+  }
+  updateTexture();
 
   const pipeline = device.createRenderPipeline({
     layout: 'auto',
@@ -229,7 +241,7 @@ async function main() {
 
   function render() {
     if (orbitEnabled) {
-      angle += 0.01; // Update orbit angle
+      angle += 0.005; // Update orbit angle
     }
     const eye = vec3(radius * Math.sin(angle), 0, radius * Math.cos(angle)); // Camera position
     const at = vec3(0, 0, 0); // Look-at point
@@ -237,33 +249,6 @@ async function main() {
 
     const view = lookAt(eye, at, up);
     const mvp = mult(projection, mult(view, model));
-
-    var texture = device.createTexture({
-      size: [img.width, img.height, 1],
-      format: 'rgba8unorm',
-      mipLevelCount: options.mipmap ? numMipLevels(img.width, img.height) : 1,
-      usage:
-        GPUTextureUsage.COPY_DST |
-        GPUTextureUsage.TEXTURE_BINDING |
-        GPUTextureUsage.RENDER_ATTACHMENT,
-    });
-    device.queue.copyExternalImageToTexture(
-      { source: img, flipY: options.flipY },
-      { texture: texture },
-      { width: img.width, height: img.height }
-    );
-    if (options.mipmap) {
-      generateMipmap(device, texture);
-    }
-
-    const uniformData = new Float32Array([
-      ...flatten(eye),
-      L_e,
-      L_a,
-      k_d,
-      k_s,
-      shininess,
-    ]);
 
     const bindGroup = device.createBindGroup({
       layout: pipeline.getBindGroupLayout(0),
@@ -284,7 +269,6 @@ async function main() {
     });
 
     device.queue.writeBuffer(uniformBuffer, 0, flatten(mvp));
-    device.queue.writeBuffer(uniformBuffer, sizeof['mat4'], uniformData);
     // Create a render pass in a command buffer and submit it
     const encoder = device.createCommandEncoder();
     const pass = encoder.beginRenderPass({
@@ -320,6 +304,19 @@ async function main() {
 
     requestAnimationFrame(render);
   }
+
+  function updateAndRender() {
+    updateTexture();
+    render();
+    const settings = getInputs();
+    // Log each setting key and value
+    Object.entries(settings).forEach(([key, value]) => {
+      console.log(key);
+      console.log(value);
+    });
+  }
+
+  renderOnChange(updateAndRender);
   render();
 
   // -----------------------------
