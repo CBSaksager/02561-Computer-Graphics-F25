@@ -115,11 +115,22 @@ async function main() {
     })
   );
 
+  const quadPositions = [
+    vec3(-1, -1, 0.999),
+    vec3(-1, 1, 0.999),
+    vec3(1, -1, 0.999),
+    vec3(1, 1, 0.999),
+  ]
+
+  const quadIndices = new Uint32Array([
+    0, 2, 1,
+    2, 3, 1,
+  ]);
+
   const initialSubdivisions = 6;
   for (let i = 0; i < initialSubdivisions; ++i) {
     indices = new Uint32Array(subdivideSphere(positions, indices));
   }
-
   const maxSubdivisionLevel = 8;
 
   const positionBuffer = device.createBuffer({
@@ -131,6 +142,7 @@ async function main() {
     size: sizeof['vec3'] * 4 ** (maxSubdivisionLevel + 1),
     usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
   });
+
 
   const positionBufferLayout = {
     arrayStride: sizeof['vec3'],
@@ -145,7 +157,7 @@ async function main() {
 
   const backgroundColor = { r: 0, g: 0, b: 0, a: 1.0 };
 
-  const fovy = 45;
+  const fovy = 120;
   const aspect = canvas.width / canvas.height;
   const near = 0.1;
   const far = 100;
@@ -178,7 +190,12 @@ async function main() {
 
   // Uniform buffer
   const uniformBuffer = device.createBuffer({
-    size: sizeof['mat4'],
+    size: sizeof['mat4'] * 2,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+
+  const uniformBufferBg = device.createBuffer({
+    size: sizeof['mat4'] * 2,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
 
@@ -256,7 +273,18 @@ async function main() {
     const up = vec3(0, 1, 0); // Up vector
 
     const view = lookAt(eye, at, up);
-    const mvp = mult(projection, mult(view, model));
+    const mvp_sphere = mult(projection, mult(view, model));
+    const m_tex_sphere = mat4();
+    const mvp_quad = mat4();
+
+    const invProjection = inverse(projection);
+    const invViewRotation = inverse(view);
+    invViewRotation[0][3] = 0;
+    invViewRotation[1][3] = 0;
+    invViewRotation[2][3] = 0;
+    invViewRotation[3][3] = 0;
+
+    const m_tex_quad = mult(invViewRotation, invProjection);
 
     const bindGroup = device.createBindGroup({
       layout: pipeline.getBindGroupLayout(0),
@@ -276,7 +304,34 @@ async function main() {
       ],
     });
 
-    device.queue.writeBuffer(uniformBuffer, 0, flatten(mvp));
+    const bindGroupBg = device.createBindGroup({
+      layout: pipeline.getBindGroupLayout(0),
+      entries: [
+        {
+          binding: 0,
+          resource: { buffer: uniformBufferBg },
+        },
+        {
+          binding: 1,
+          resource: cubeSampler,
+        },
+        {
+          binding: 2,
+          resource: cubeTex.createView({ dimension: 'cube' }),
+        },
+      ],
+    });
+
+    device.queue.writeBuffer(uniformBuffer, 0, flatten(mvp_sphere));
+    device.queue.writeBuffer(uniformBuffer, 64, flatten(m_tex_sphere));
+    device.queue.writeBuffer(uniformBufferBg, 0, flatten(mvp_quad));
+    device.queue.writeBuffer(uniformBufferBg, 64, flatten(m_tex_quad));
+
+    device.queue.writeBuffer(positionBuffer, 0, flatten(quadPositions));
+    device.queue.writeBuffer(indexBuffer, 0, quadIndices);
+    device.queue.writeBuffer(positionBuffer, 4 * 3 * 4, flatten(positions));
+    device.queue.writeBuffer(indexBuffer, 4 * 6, indices);
+
     // Create a render pass in a command buffer and submit it
     const encoder = device.createCommandEncoder();
     const pass = encoder.beginRenderPass({
@@ -301,11 +356,15 @@ async function main() {
       },
     });
 
-    pass.setBindGroup(0, bindGroup);
     pass.setPipeline(pipeline);
     pass.setVertexBuffer(0, positionBuffer);
     pass.setIndexBuffer(indexBuffer, 'uint32');
-    pass.drawIndexed(indices.length);
+
+    pass.setBindGroup(0, bindGroup);
+    pass.drawIndexed(indices.length, 1, 6, 4);
+
+    pass.setBindGroup(0, bindGroupBg);
+    pass.drawIndexed(quadIndices.length, 1);
 
     pass.end();
     device.queue.submit([encoder.finish()]);
