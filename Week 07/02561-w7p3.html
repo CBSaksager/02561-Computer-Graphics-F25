@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Week 7 P3</title>
+    <script type="text/javascript" src="../MV.js"></script>
+    <script type="text/javascript" src="genmipmap.js"></script>
+    <script type="text/javascript" src="02561-w7p3.js"></script>
+</head>
+
+<script id="wgsl" type="x-shader" src="02561-w7p3.wgsl"></script>
+
+<body>
+    <div style="display:flex; gap:16px; align-items:flex-start;">
+        <canvas id="my-canvas" width="512" height="512"></canvas>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+
+            <div>
+                Texture Edge:
+                <select id="TextEdgeMode">
+                    <option value="clamp-to-edge">Clamp-to-edge</option>
+                    <option value="repeat" selected>Repeat</option>
+                </select>
+            </div>
+
+            <div>
+                Minification Filter:
+                <select id="minFilter">
+                    <option value="nearest">Nearest</option>
+                    <option value="linear" selected>Linear</option>
+                </select>
+            </div>
+
+            <div>
+                Magnification Filter:
+                <select id="magFilter">
+                    <option value="nearest" selected>Nearest</option>
+                    <option value="linear">Linear</option>
+                </select>
+            </div>
+
+            <div>
+                Mipmap Filter:
+                <select id="mipmapFilter">
+                    <option value="nearest">Nearest</option>
+                    <option value="linear" selected>Linear</option>
+                </select>
+            </div>
+
+            <div>
+                Mipmapping:
+                <input type="checkbox" id="mipmapEnabled" checked />
+            </div>
+
+        </div>
+
+    </div>
+    <br>
+    <button id="orbitButton">Orbit on/off</button>
+    <br>
+
+    <div class="textcontainer">
+        <ul>
+            TODO: Explain the transformation.
+        </ul>
+    </div>
+</body>
+
+</html>
