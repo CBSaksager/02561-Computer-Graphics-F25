@@ -52,7 +52,7 @@ async function main() {
   });
 
   // OBJ Model
-  const obj_filename = 'Simple_Mushroom.obj';
+  const obj_filename = 'Mana_Mushroom.obj';
   const obj = await readOBJFile(obj_filename, 1.0, true);
 
   const positions = obj.vertices;
@@ -142,7 +142,7 @@ async function main() {
 
   // Camera orbit
   let angle = 0; // Orbit angle
-  const radius = 15; // Orbit radius
+  const radius = 5; // Orbit radius
   let orbitEnabled = false; // Orbit control
   const orbitButton = document.getElementById('orbitButton');
   orbitButton.onclick = () => {
