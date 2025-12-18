@@ -13,7 +13,40 @@
     <canvas id="my-canvas" width="512" height="512">
     </canvas>
     <br>
-    Currently it is a left-handed coordinate system.
 </body>
+
+<hr>
+Part 1 (Orthographic Projection):
+<li>
+    MVP = M_st x M_ortho x V
+</li>
+As can be seen on line 87-89
+<br>
+<br>
+
+Part 2 (Perspective Projection):
+<br>
+Here we make a MVP for each cube.
+<br>
+First I define the centering (C) as (-0.5, -0.5, -0.5) to center the cube at the origin.
+Then I can transform each cube by translating its postion and rotation.
+<li>
+    MVP_1 = M_st x M_persp x V x T(-2, 0, 0) x C
+</li>
+<li>
+    MVP_2 = M_st x M_persp x V x T(0, 0, 0) x R_y(30) x C
+</li>
+<li>
+    MVP_3 = M_st x M_persp x V x T(2, 0, 0) x R_x(30) x R_y(30) x C
+</li>
+<br>
+<li>
+    A more general form for MVP_i would be: <br>
+    MVP_i = M_st x M_projection x V x M_model<br>
+    As can be seen on line 92 (M_projection) and line 105. <br>
+    where M_model is the model matrix for each cube, which includes translation and rotation.
+</li>
+
+<br>
 
 </html>
