@@ -52,7 +52,7 @@ async function main() {
   });
 
   // OBJ Model
-  const obj_filename = 'Mana_Mushroom.obj';
+  const obj_filename = 'Mana_Mushroom_1.obj';
   const obj = await readOBJFile(obj_filename, 1.0, true);
 
   const positions = obj.vertices;
