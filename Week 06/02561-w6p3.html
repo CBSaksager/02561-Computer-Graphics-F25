@@ -14,7 +14,7 @@
     <div style="display:flex; gap:16px; align-items:flex-start;">
         <canvas id="my-canvas" width="512" height="512"></canvas>
         <div style="display:flex; flex-direction:column; gap:12px;">
-        
+
             <div>
                 Texture Edge:
                 <select id="TextEdgeMode">
@@ -22,15 +22,15 @@
                     <option value="repeat" selected>Repeat</option>
                 </select>
             </div>
-        
+
             <div>
                 Minification Filter:
                 <select id="minFilter">
-                    <option value="nearest">Nearest</option>
-                    <option value="linear" selected>Linear</option>
+                    <option value="nearest" selected>Nearest</option>
+                    <option value="linear">Linear</option>
                 </select>
             </div>
-        
+
             <div>
                 Magnification Filter:
                 <select id="magFilter">
@@ -38,7 +38,7 @@
                     <option value="linear">Linear</option>
                 </select>
             </div>
-        
+
             <div>
                 Mipmap Filter:
                 <select id="mipmapFilter">
@@ -46,12 +46,12 @@
                     <option value="linear" selected>Linear</option>
                 </select>
             </div>
-        
+
             <div>
                 Mipmapping:
                 <input type="checkbox" id="mipmapEnabled" checked />
             </div>
-        
+
         </div>
 
     </div>
@@ -60,7 +60,26 @@
     <button id="increaseButton">Increase Subdivision</button>
     <button id="orbitButton">Orbit on/off</button>
     <p>Current Subdivision Level: <span id="currentSubdivision">5</span></p>
+    <div style="display:flex; gap:20px; margin-top:20px;">
+        <div style="text-align:center;">
+            <p><b>Minification Filter: Linear</b></p>
+            <img src="images/minificaitonFilterLinear.png" alt="Image 1" style="max-width:400px;">
+        </div>
+        <div style="text-align:center;">
+            <p><b>Minification Filter: Nearest</b></p>
+            <img src="images/minificationFilterNearest.png" alt="Image 2" style="max-width:400px;">
+        </div>
+    </div>
+    As can be seen above the minification filter has a big impact, and can lose a lot of detail if we use the Linear
+    filter.
     <br>
+    I chose to use nearest as the mountains texture still looks like mountains, while linear makes it look very blurry.
+    <br>
+    The coastline also becomes very muddy with the linear filtering.
+    <br>
+    With nearest it does look a little blocky, but these pictures are very zoomed in, and it can be hard to tell when
+    the
+    image is at normal zoom.
 </body>
 
 </html>
