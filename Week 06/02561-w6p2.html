@@ -2,12 +2,12 @@
 <html>
 
 <head>
-    <title>Week 6 P1</title>
+    <title>Week 6 P2</title>
     <script type="text/javascript" src="../MV.js"></script>
     <script type="text/javascript" src="genmipmap.js"></script>
     <script type="text/javascript" src="02561-w6p2.js"></script>
 </head>
-    
+
 <script id="wgsl" type="x-shader" src="02561-w6p2.wgsl"></script>
 
 <body>
@@ -17,7 +17,7 @@
         </canvas>
 
         <div style="display:flex; flex-direction:column; gap:12px;">
-            
+
             <div>
                 Texture Edge:
                 <select id="TextEdgeMode">
@@ -29,8 +29,8 @@
             <div>
                 Minification Filter:
                 <select id="minFilter">
-                    <option value="nearest">Nearest</option>
-                    <option value="linear" selected>Linear</option>
+                    <option value="nearest" selected>Nearest</option>
+                    <option value="linear">Linear</option>
                 </select>
             </div>
 
@@ -54,7 +54,7 @@
                 Mipmapping:
                 <input type="checkbox" id="mipmapEnabled" checked />
             </div>
-        
+
         </div>
     </div>
 </body>
@@ -64,7 +64,34 @@
     <hr>
     <b>Explanation of settings:</b>
     <ul>
-        <li><i>TODO: </i>
+        <li>Texture Edge: Defines how texture coordinates outside the range [0, 1] are handled.
+            <ul style="list-style-type: none;">
+                "Clamp-to-edge" will stretch the edge pixels, while "Repeat" will just start over.
+            </ul>
+        </li>
+        <li>
+            Minificantio Filter: Defines how a texture is showed when it is smaller on screen than its
+            original size.
+            <ul style="list-style-type: none;">
+                <li>"Nearest" will use the nearst texel. This creates a pixelated look.</li>
+                <li>"Linear" will interpolate between the nearest texels. This creates a smoother look but can be
+                    blurry.</li>
+            </ul>
+            Linear filtering has little effect on minification issues without mipmapping.
+        </li>
+        <li>
+            Magnification Filter: Defines how a texture is showed when it is bigger on screen than its
+            original size.
+            <ul style="list-style-type: none;">
+                "Nearest" and "Linear" works the same way as for minification.
+            </ul>
+        </li>
+        <li>
+            Mipmap Filter: Controls how the mipmap levels are blended when rendering.
+            <ul style="list-style-type: none;">
+                <li>"Nearest" will select the closest mipmap level without blending. </li>
+                <li>"Linear" will blend between the two closest mipmap levels for smoother transitions.</li>
+            </ul>
         </li>
     </ul>
 
