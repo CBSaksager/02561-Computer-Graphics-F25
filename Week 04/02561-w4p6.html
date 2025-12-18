@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Week 4 P6</title>
+    <script type="text/javascript" src="../MV.js"></script>
+    <script type="text/javascript" src="02561-w4p6.js"></script>
+</head>
+
+<script id="wgsl" type="x-shader" src="02561-w4p6.wgsl"></script>
+
+<body>
+    <div style="display:flex; gap:16px; align-items:flex-start;">
+        <canvas id="my-canvas" width="512" height="512"></canvas>
+
+        <div style="display:flex; flex-direction:column; gap:8px; align-self:flex-start;">
+            <div class="slidercontainer" id="emittedRadiance" style="width:220px;">
+                Emitted Radiance (L_e):
+                <br>
+                <input type="range" value="1" min="0.1" max="2.0" step="0.1" class="slider"
+                    oninput="this.nextElementSibling.value = this.value">
+                <output>1</output>
+            </div>
+
+            <div class="slidercontainer" id="ambientRadiance" style="width:220px;">
+                Ambient Radiance (L_a):
+                <br>
+                <input type="range" value="0.1" min="0.0" max="1.0" step="0.1" class="slider"
+                    oninput="this.nextElementSibling.value = this.value">
+                <output>0.1</output>
+            </div>
+
+            <div class="slidercontainer" id="diffuseCoefficient" style="width:220px;">
+                Diffuse Coefficient (k_d):
+                <br>
+                <input type="range" value="0.8" min="0.0" max="1.0" step="0.1" class="slider"
+                    oninput="this.nextElementSibling.value = this.value">
+                <output>0.8</output>
+            </div>
+
+            <div class="slidercontainer" id="specularCoefficient" style="width:220px;">
+                Specular Coefficient (k_s):
+                <br>
+                <input type="range" value="0" min="0.0" max="1.0" step="0.1" class="slider"
+                    oninput="this.nextElementSibling.value = this.value">
+                <output>0</output>
+            </div>
+
+            <div class="slidercontainer" id="shininess" style="width:220px;">
+                Shininess (s):
+                <br>
+                <input type="range" value="10" min="1" max="250" step="1" class="slider"
+                    oninput="this.nextElementSibling.value = this.value">
+                <output>10</output>
+            </div>
+        </div>
+
+
+    </div>
+    <br>
+    <button id="decreaseButton">Decrease Subdivision</button>
+    <button id="increaseButton">Increase Subdivision</button>
+    <button id="orbitButton">Orbit on/off</button>
+    <p>Current Subdivision Level: <span id="currentSubdivision">0</span></p>
+</body>
+
+<hr>
+<h3>Questions:</h3>
+<ol type="a">
+    <li>
+        Flat shading: Each triangle/face is shaded based on the triangles normal vector. Resulting in a single color pr
+        face<br>
+        Gourand shading: Instead of computing the color pr face, the color is computed pr vertex and then interpolated
+        across the face.
+        This results in a smoother appearance.<br>
+        Phong shading: The normal vector is interpolated across the face and the color is computed pr pixel. <br>
+        Implementing flat shading: Loop over each triangle, compute the face normal and use this normal for all pixels
+        in the triangle when computing the color.<br>
+        Phong shading is better. The highlight are sharper and the overall appearance is smoother. Where Gourand
+        shading can miss highlights if they are not located at a vertex.
+    </li>
+    <li>
+        Directional light has the same intensity regardless of the distance from the light source to the object. <br>
+        Point light intensity decreases with distance from the light source to the object.
+    </li>
+    <li>
+        Yes because the eye position is used to compute the view direction vector in the specular reflection
+        calculation. (See line 35 and 52 in the wgsl file)
+    </li>
+    <li>
+        Setting the specular term/coefficient to (0, 0, 0,) (k_s = 0) will remove the highlights. (Has been done in the
+        above model)
+    </li>
+    <li>
+        Increasing the shininess (s) creates smaller and sharper highlights.
+    </li>
+    <li>
+        World space.
+    </li>
+</ol>
+
+</html>
